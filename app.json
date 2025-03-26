@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Saraya",
+    "slug": "sarayaplus",
+    "scheme": [
+      "saraya"
+    ],
+    "version": "2.1.0",
+    "orientation": "portrait",
+    "icon": "./App/assets/logoAssets/sarayaiconsquare.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./App/assets/Splash_Screen.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.saraya.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.saraya.SarayaApp",
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "@react-native-google-signin/google-signin"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e4710fbc-5907-4811-b3cf-02a043710590"
+      }
+    },
+    "owner": "saraya"
+  }
+}
