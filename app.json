@@ -2,7 +2,9 @@
   "expo": {
     "name": "Saraya",
     "slug": "sarayaplus",
-    "scheme": ["saraya"],
+    "scheme": [
+      "saraya"
+    ],
     "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./App/assets/logoAssets/sarayaiconsquare.png",
@@ -12,7 +14,9 @@
       "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.saraya.app"
@@ -28,12 +32,14 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      "@react-native-google-signin/google-signin"
+    ],
     "extra": {
       "eas": {
-        "projectId": "e60898d3-8a35-4a8b-a3c9-8ce68df15b62"
+        "projectId": "e4710fbc-5907-4811-b3cf-02a043710590"
       }
     },
-    "plugins": ["@react-native-google-signin/google-signin"],
-    "owner": "rapler"
+    "owner": "saraya"
   }
 }

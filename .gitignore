@@ -82,5 +82,5 @@ fastlane/test_output
 *.lock
 profile
 
-android\
-ios\
+android/
+ios/

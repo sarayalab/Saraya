@@ -1,4 +1,4 @@
-package com.saraya.app
+package com.saraya.SarayaApp
 
 import android.os.Build
 import android.os.Bundle

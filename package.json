@@ -55,5 +55,16 @@
   "devDependencies": {
     "@babel/core": "^7.20.0"
   },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "react-native-chart-kit",
+          "react-native-html-to-pdf"
+        ],
+        "listUnknownPackages": false
+      }
+    }
+  },
   "private": true
 }
