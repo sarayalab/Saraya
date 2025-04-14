@@ -74,6 +74,7 @@ const Roadmap = () => {
     if (user) {
       setUserId(user.uid);
       fetchUserData(user.uid);
+      console.log("user", user);
     }
   }, []);
 

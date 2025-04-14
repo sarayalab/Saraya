@@ -321,7 +321,8 @@ export default function Tugas({ navigation }) {
             <View style={tw`w-full bg-gray-300 rounded-full h-3 mt-2`}>
               <View
                 style={tw`bg-[#BB1624] h-full rounded-full`}
-                width={`${(Math.min((quizAnswersCorrect / 10) * 100), 100)}%`}
+                //width={`${(Math.min((quizAnswersCorrect / 10) * 100), 100)}%`} //this will always returns 100 due to wrong () placement?
+                width={`${Math.min((quizAnswersCorrect / 10) * 100, 100)}%`}
               />
             </View>
           </View>

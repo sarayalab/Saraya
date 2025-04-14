@@ -81,3 +81,8 @@ fastlane/test_output
 *.swp
 *.lock
 profile
+<<<<<<< HEAD
+
+android/
+ios/
+=======
