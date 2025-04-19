@@ -14,7 +14,7 @@ import { BackHandler } from "react-native";
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation } from '@react-navigation/native';
 import { auth, db } from '../../firebase';
-import { getAuth, GoogleAuthProvider, signInWithEmailAndPassword, sendPasswordResetEmail, getRedirectResult, signInWithCredential } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithEmailAndPassword, sendPasswordResetEmail, getRedirectResult, signInWithCredential, connectAuthEmulator } from 'firebase/auth';
 import { Ionicons } from '@expo/vector-icons';
 
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -213,41 +213,70 @@ const handlegoogleSignIn = async () => {
     const idToken = response.data.idToken;
     console.log("idToken", idToken);
     const credential = GoogleAuthProvider.credential(idToken);
+    const userGoogleSigninCredential = await signInWithCredential(auth, credential);
 
-    signInWithCredential(auth, credential).then(async (userGoogleSigninCredential) => {
-      const user = userGoogleSigninCredential.user;
-      const userUid = user.uid;
-      console.log("userUid", userUid);
-      console.log('User sign in success', user.email);
+    const user = userGoogleSigninCredential.user;
+    const userUid = user.uid;
+    console.log("userUid", userUid);
+    console.log("User sign in success", user.email);
 
-      // Check if the user already exists in Firestore
-      const userDocRef = doc(db, "users", userUid);
-      const userDoc = await getDoc(userDocRef);
+    // Check if user already exist in Firestore
+    const userDocRef = doc(db, "users", userUid);
+    const userDoc = await getDoc(userDocRef);
 
-      if (!userDoc.exists()){
-        // User doesn't exist, create new user in Firestore
-        await setDoc(doc(db, "users", userUid),{
-          fullname: user.displayName || "Google User", // use Google display name // make it able to change it later
-          email : user.email,
-          phoneNumber: user.phoneNumber || '',
-          scores : {},
-          role: "user",
-          hasCompletedSurvey: false,
-          coursesJoined: [1], // Add the default course (ID = 1)
-          createdAt: new Date().toISOString(),
-        });
+    if (!userDoc.exists()){
+      // User doesn't exist, create new user in Firestore
+      await setDoc(doc(db, "users", userUid), {
+        fullname: user.displayName || "Google User", //default display name
+        email: user.email,
+        phoneNumber: user.phoneNumber || '',
+        scores: {},
+        role: "user",
+        hasCompletedSurvey: false,
+        courseJoined: [0], // Add the default course (ID = 1)
+        createdAt: new Date().toISOString(),
+      });
 
-        console.log("User data saved successfully");
+      console.log("User data saved succesfully");
+    }
+
+    // Navigate to the appropriate screen after user sign-in
+    navigation.replace("MainApp");
+    
+    // signInWithCredential(auth, credential).then(async (userGoogleSigninCredential) => {
+    //   const user = userGoogleSigninCredential.user;
+    //   const userUid = user.uid;
+    //   console.log("userUid", userUid);
+    //   console.log('User sign in success', user.email);
+
+    //   // Check if the user already exists in Firestore
+    //   const userDocRef = doc(db, "users", userUid);
+    //   const userDoc = await getDoc(userDocRef);
+
+    //   if (!userDoc.exists()){
+    //     // User doesn't exist, create new user in Firestore
+    //     await setDoc(doc(db, "users", userUid),{
+    //       fullname: user.displayName || "Google User", // use Google display name // make it able to change it later
+    //       email : user.email,
+    //       phoneNumber: user.phoneNumber || '',
+    //       scores : {},
+    //       role: "user",
+    //       hasCompletedSurvey: false,
+    //       coursesJoined: [1], // Add the default course (ID = 1)
+    //       createdAt: new Date().toISOString(),
+    //     });
+
+    //     console.log("User data saved successfully");
         
-        // Navigate to the appropriate screen
-        navigation.replace("MainApp");
-      } else {
-        // User already exists, just navigate to the main app
-        navigation.replace("MainApp");
-      }
-    }).catch((error) => {
-      console.error("Error signing in with Google", error);
-    });
+    //     // Navigate to the appropriate screen
+    //     navigation.replace("MainApp");
+    //   } else {
+    //     // User already exists, just navigate to the main app
+    //     navigation.replace("MainApp");
+    //   }
+    // }).catch((error) => {
+    //   console.error("Error signing in with Google", error);
+    // });
 
   } catch (error) {
     console.error(error);

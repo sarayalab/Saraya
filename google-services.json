@@ -14,11 +14,19 @@
       },
       "oauth_client": [
         {
-          "client_id": "826074449604-72i69n9alqt19ed9pkqpmftptctcikr8.apps.googleusercontent.com",
+          "client_id": "826074449604-7md7966frm19c7kgjuk6d13tidno4dd8.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.saraya.SarayaApp",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+            "certificate_hash": "d0057f1253a92a1ba587c620c54dc2b5adf14353"
+          }
+        },
+        {
+          "client_id": "826074449604-a34oacaavd501aiji2leu6om3g5v8jbb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.saraya.SarayaApp",
+            "certificate_hash": "5e12d2e4572d21b0ac8d4f16807033fbb9c1a30b"
           }
         }
       ],
