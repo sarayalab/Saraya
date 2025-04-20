@@ -239,10 +239,10 @@ const handlegoogleSignIn = async () => {
 
       console.log("User data saved succesfully");
     }
-
+    console.log(user.providerData);
     // Navigate to the appropriate screen after user sign-in
     navigation.replace("MainApp");
-    
+
     // signInWithCredential(auth, credential).then(async (userGoogleSigninCredential) => {
     //   const user = userGoogleSigninCredential.user;
     //   const userUid = user.uid;
