@@ -10,6 +10,8 @@ import {
   Modal, // Import Modal here
   TouchableOpacity,
   RefreshControl, // Import TouchableOpacity for buttons
+  BackHandler,
+  Alert,
 } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -37,69 +39,46 @@ const MainApp = () => {
   const [newXP, setNewXP] = useState(0);
 
   const fetchUserData = () => {
-    try {
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userDocRef = doc(db, "users", currentUser.uid);
+    const user = auth.currentUser;
+    if (!user) return;
 
-        return onSnapshot(userDocRef, async (doc) => {
-          if (doc.exists()) {
-            const userData = doc.data();
-            const today = new Date().toDateString();
-            const lastDailyXPUpdate = userData.dailyXP?.date || "";
-
-            // Reset dailyXP if date is different
-            let updatedDailyXP = userData.dailyXP?.value || 0;
-            if (lastDailyXPUpdate !== today) {
-              updatedDailyXP = 0;
-              await updateDoc(userDocRef, {
-                dailyXP: {
-                  date: today,
-                  value: 0,
-                },
-              });
-            }
-
-            setFullname(userData.fullname || "");
-            setStreak(userData.streak || 0);
-            setLastClaimed(userData.lastClaimed || null);
-            setXp(userData.xp || 0);
-            setCoins(userData.coins || 0);
-            setDailyXP(updatedDailyXP || 0);
-          }
-        });
+    const userDocRef = doc(db, "users", user.uid);
+    
+    return onSnapshot(userDocRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const userData = snapshot.data();
+        setXp(userData.xp || 0);
+        setCoins(userData.coins || 0);
       }
-    } catch (error) {
-      console.error("Failed to load user data:", error);
-    }
+    });
   };
 
   const updateDailyXP = async (newXP) => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const userDocRef = doc(db, "users", user.uid);
     const today = new Date().toDateString();
-    const currentUser = auth.currentUser;
 
-    if (currentUser) {
-      const userDocRef = doc(db, "users", currentUser.uid);
+    try {
       const userDoc = await getDoc(userDocRef);
-
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        let updatedDailyXP = userData.dailyXP?.value || 0;
-
-        // Tambahkan XP baru ke dailyXP
-        updatedDailyXP += newXP;
-
-        // Simpan ke Firestore
+        const currentDailyXP = userData.dailyXP?.value || 0;
+        
         await updateDoc(userDocRef, {
           dailyXP: {
             date: today,
-            value: updatedDailyXP, // Update nilai dailyXP
+            value: currentDailyXP + newXP
           },
-          xp: (userData.xp || 0) + newXP, // Update total XP
+          xp: (userData.xp || 0) + newXP
         });
-        setDailyXP(updatedDailyXP); // Update dailyXP di state
-        setXp((userData.xp || 0) + newXP); // Update total XP di state
+        
+        setDailyXP(currentDailyXP + newXP);
+        setXp((userData.xp || 0) + newXP);
       }
+    } catch (error) {
+      console.error("Error updating daily XP:", error);
     }
   };
 
@@ -159,6 +138,30 @@ const MainApp = () => {
   };
 
   useEffect(() => {
+    const backAction = () => {
+      Alert.alert(
+        "Keluar Aplikasi",
+        "Apakah Anda yakin ingin keluar dari aplikasi?",
+        [
+          {
+            text: "Tidak",
+            onPress: () => null,
+            style: "cancel"
+          },
+          { 
+            text: "Ya", 
+            onPress: () => BackHandler.exitApp() 
+          }
+        ]
+      );
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         setUser(user);
@@ -168,7 +171,10 @@ const MainApp = () => {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      backHandler.remove();
+      unsubscribe();
+    };
   }, []);
 
   const openModal = () => {
@@ -245,7 +251,10 @@ const MainApp = () => {
                       Mulai Sekarang
                     </Text>
                     <TouchableOpacity
-                      onPress={() => navigation.navigate("roadmap")}
+                      onPress={() => {
+                        // Remove navigation functionality, just make it clickable
+                        return;
+                      }}
                       style={tw`bg-white p-1 flex items-center rounded-full`}
                     >
                       <Ionicons name="play" size={20} color="#BB1624" />

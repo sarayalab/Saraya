@@ -66,14 +66,25 @@ export default function Signin() {
       "826074449604-mhj0b3a9ioesmgq8rshf57a7li03hh0c.apps.googleusercontent.com",
       webClientId:
       "826074449604-li4cosq2noi1pa937keonond1f2ssapa.apps.googleusercontent.com",
-      // androidClientId: 
-      // "826074449604-8uch1c7pi1kik3vptf5kq1nqnupimea5.apps.googleusercontent.com"
-      //profileiImageSize:150 // change if needed,
     });
     setLoading(true);
 
     const backAction = () => {
-      BackHandler.exitApp();
+      Alert.alert(
+        "Keluar Aplikasi",
+        "Apakah Anda yakin ingin keluar dari aplikasi?",
+        [
+          {
+            text: "Tidak",
+            onPress: () => null,
+            style: "cancel"
+          },
+          { 
+            text: "Ya", 
+            onPress: () => BackHandler.exitApp() 
+          }
+        ]
+      );
       return true;
     };
 
@@ -164,6 +175,8 @@ export default function Signin() {
             coursesJoined: userData.coursesJoined
               ? [...userData.coursesJoined, 1]
               : [1], // Jika coursesJoined belum ada, buat array baru
+            completedModules: userData.completedModules || [],
+            lastAccessedModule: userData.lastAccessedModule || 0,
           });
           console.log("Modul 'Dasar Keuangan Bisnis' ditambahkan ke akun pengguna.");
         }

@@ -119,7 +119,7 @@ export default function BusinessSurvey({ route }) {
       });
       Alert.alert("Success", "Survey completed!");
       setHasSurvey(true);
-      navigation.navigate("MainApp");
+      navigation.replace("MainApp");
     } catch (error) {
       console.error("Error saving survey data: ", error);
       Alert.alert("Error", "Failed to save survey data.");

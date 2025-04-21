@@ -24,6 +24,9 @@ import { auth, db } from "../../../../firebase";
 import { Ionicons } from "react-native-vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTimeTracking } from "../hooks/useTimeTracking";
+import { onSnapshot } from "firebase/firestore";
+
+
 
 const addQuizToFirestore = async () => {
   try {
@@ -94,6 +97,9 @@ const addQuizToFirestore = async () => {
 };
 
 const RoadmapScreen = ({ navigation, route }) => {
+const [coins, setCoins] = useState(0);
+const [xp, setXp] = useState(0);
+
   const uid = auth.currentUser.uid;
 
   const [levels, setLevels] = useState([]);
@@ -108,6 +114,7 @@ const RoadmapScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     fetchData();
+    fetchCoinsXP();
   }, []);
 
   // Add this to your RoadmapScreen component
@@ -140,22 +147,57 @@ const RoadmapScreen = ({ navigation, route }) => {
     }, [])
   );
 
+  const fetchCoinsXP = () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const userDocRef = doc(db, "users", currentUser.uid);
+
+        // return onSnapshot(userDocRef, async (doc) => {
+        //   if (doc.exists()) {
+        //     const userData = doc.data();
+
+        //     setXp(userData.xp || 0);
+        //     setCoins(userData.coins || 0);
+
+        //   }
+        // });
+        const unsubscribe = onSnapshot(userDocRef, (docSnap)=>{
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setXp(data.xp || 0);
+            setCoins(data.coins || 0);
+          }
+        });
+
+        return () => unsubscribe();
+      }
+    } catch (error) {
+      console.error("Failed to load user data:", error);
+    }
+};
+
+
   const fetchData = async () => {
     setLoading(true);
     try {
       // Fetch all data in parallel for better performance
-      const [userData, levelsData, lessonsData, quizzesData] =
+      // const [userData, levelsData, lessonsData, quizzesData] 
+      const [userData, levelsData,quizzesData]=
         await Promise.all([
           fetchUserProgress(),
           fetchRoadmapLevels(),
-          fetchLessons(),
-          fetchQuizzes(),
+         
+          fetchQuizzes()
+      
         ]);
-
+      const lessonsData = await fetchLessons(levelsData, userData);
+      
       setUserProgress(userData);
       setLevels(levelsData);
       setLessons(lessonsData);
       setQuizzes(quizzesData);
+
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -204,7 +246,7 @@ const RoadmapScreen = ({ navigation, route }) => {
     return levelsData;
   };
 
-  const fetchLessons = async () => {
+  const fetchLessons = async (levelsData, userProgressData = { lessons: {}}) => {
     // Fetch all lessons
     const lessonsCollection = collection(db, "lessons");
     const lessonsSnapshot = await getDocs(lessonsCollection);
@@ -215,27 +257,34 @@ const RoadmapScreen = ({ navigation, route }) => {
       lesson.id = doc.id; // Ensure the ID is included
       lessonsData[doc.id] = lesson;
     });
+    
+    let progressWasUpdated = false;
 
     // If there's at least one level and it has lessons, mark the first lesson as in-progress
-    if (levels.length > 0 && levels[0].lessons?.length > 0) {
-      const firstLevelId = levels[0].id;
-      const firstLessonId = levels[0].lessons[0];
+    if (levelsData.length > 0 && levelsData[0].lessons?.length > 0) {
+      // const firstLevelId = levels[0].id;
+      const firstLessonId = levelsData[0].lessons[0];
 
       // Update user progress for the first lesson if not already started
 
-      if (!userProgress.lessons[firstLessonId]) {
-        // Update local state
-        setUserProgress((prev) => ({
-          ...prev,
-          lessons: {
-            ...prev.lessons,
-            [firstLessonId]: { status: "in-progress" },
-          },
-        }));
+      if (!userProgressData.lessons[firstLessonId]) {
+        progressWasUpdated = true;
+
+        userProgressData.lessons[firstLessonId] = {status: "in-progress"};
+        // // Update local state
+        // setUserProgress((prev) => ({
+        //   ...prev,
+        //   lessons: {
+        //     ...prev.lessons,
+        //     [firstLessonId]: { status: "in-progress" },
+        //   },
+        // }));
 
         // Update in database
         const userDocRef = doc(db, "users", uid);
-        await getDoc(userDocRef).then((docSnap) => {
+        const docSnap = await getDoc(userDocRef);
+
+        // await getDoc(userDocRef).then((docSnap) => {
           if (docSnap.exists()) {
             const userData = docSnap.data();
             const updatedProgress = {
@@ -247,11 +296,12 @@ const RoadmapScreen = ({ navigation, route }) => {
             };
 
             // Update Firestore
-            getDoc(userDocRef).then(() => {
-              updateDoc(userDocRef, { progress: updatedProgress });
-            });
+            // getDoc(userDocRef).then(() => {
+            //   updateDoc(userDocRef, { progress: updatedProgress });
+            // });
+            await updateDoc(userDocRef, { progress: updatedProgress});
           }
-        });
+        // });
       }
     }
 
@@ -406,14 +456,14 @@ const RoadmapScreen = ({ navigation, route }) => {
                       source={require("../../../assets/homePage/XP1.png")}
                       style={tw`w-8 h-8`}
                     />
-                    <Text style={tw`text-white text-base`}>{"10"}</Text>
+                    <Text style={tw`text-white text-base`}>{xp}</Text>
                   </View>
                   <View style={tw`flex-row items-center gap-2`}>
                     <Image
                       source={require("../../../assets/homePage/coins.png")}
                       style={tw`w-8 h-8`}
                     />
-                    <Text style={tw`text-white text-base`}>{"10"}</Text>
+                    <Text style={tw`text-white text-base`}>{coins}</Text>
                   </View>
                 </View>
                 <View style={tw`w-[24px] h-[24px]`} />
@@ -463,9 +513,7 @@ const RoadmapScreen = ({ navigation, route }) => {
                             {renderModuleIcon(lessonProgress.status)}
                             <Text
                               style={tw`text-center mt-2 text-xs ${
-                                module.status === "locked"
-                                  ? "text-gray-400"
-                                  : "text-black"
+                                isLocked ? "text-gray-400" : "text-black"
                               }`}
                             >
                               {lesson.title}

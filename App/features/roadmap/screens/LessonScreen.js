@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import tw from "twrnc";
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp, increment } from "firebase/firestore";
 import { Ionicons } from "@expo/vector-icons";
 import Markdown, { MarkdownIt } from "react-native-markdown-display";
 import { auth, db } from "../../../../firebase";
@@ -120,16 +120,34 @@ const LessonScreen = ({ navigation, route }) => {
 
     try {
       const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+      const currentLessonData = userData.progress?.lessons?.[lessonId] || {};
 
-      // Update lesson completion status
-      await updateDoc(userRef, {
-        [`progress.lessons.${lessonId}`]: {
-          status: "completed",
-          startedAt: userProgress?.startedAt || serverTimestamp(),
-          completedAt: serverTimestamp(),
-          lastPosition: currentContentIndex,
-        },
-      });
+      // Only give XP if lesson hasn't been completed before
+      if (!currentLessonData.status || currentLessonData.status !== "completed") {
+        await updateDoc(userRef, {
+          [`progress.lessons.${lessonId}`]: {
+            status: "completed",
+            startedAt: userProgress?.startedAt || serverTimestamp(),
+            completedAt: serverTimestamp(),
+            lastPosition: currentContentIndex,
+          },
+          xp: increment(10),
+        });
+        console.log("Lesson XP earned for the first time");
+      } else {
+        // Just update the lesson status without giving XP
+        await updateDoc(userRef, {
+          [`progress.lessons.${lessonId}`]: {
+            status: "completed",
+            startedAt: userProgress?.startedAt || serverTimestamp(),
+            completedAt: serverTimestamp(),
+            lastPosition: currentContentIndex,
+          },
+        });
+        console.log("Lesson already completed, no XP given");
+      }
 
       // Check if all lessons in this level are complete, then update level progress
       if (levelId) {
@@ -141,8 +159,6 @@ const LessonScreen = ({ navigation, route }) => {
           const levelLessons = levelData.lessons || [];
 
           // Now get all user's lesson progress
-          const userDoc = await getDoc(userRef);
-          const userData = userDoc.data();
           const userLessonProgress = userData.progress?.lessons || {};
 
           // Check if all lessons in this level are completed

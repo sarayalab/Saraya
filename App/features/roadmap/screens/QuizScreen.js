@@ -42,6 +42,7 @@ const QuizScreen = ({ route, navigation }) => {
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [incorrectQuestions, setIncorrectQuestions] = useState([]);
+  const [isReviewPhase, setIsReviewPhase] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Time tracking
@@ -91,16 +92,39 @@ const QuizScreen = ({ route, navigation }) => {
     }).start(() => {
       setShowFeedbackModal(false);
 
-      // Move to next question or show results after modal fades out
-      if (currentQuestionIndex < quiz.questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setSelectedOption(null);
+      // Check if we're in the review phase
+      if (isReviewPhase) {
+        // If all questions are correct, complete the quiz
+        if (incorrectQuestions.length === 0) {
+          setShowResults(true);
+          return;
+        }
+        // Otherwise, move to the next incorrect question
+        const nextIncorrectIndex = incorrectQuestions.findIndex(q => q > currentQuestionIndex);
+        if (nextIncorrectIndex === -1) {
+          // If no more incorrect questions after current, go to first incorrect
+          setCurrentQuestionIndex(incorrectQuestions[0]);
+        } else {
+          setCurrentQuestionIndex(incorrectQuestions[nextIncorrectIndex]);
+        }
       } else {
-        // Complete the quiz if all questions are answered
-        setShowResults(true);
+        // In normal phase, check if we've reached the end of initial questions
+        if (currentQuestionIndex < quiz.questions.length - 1) {
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+        } else {
+          // Start review phase if there are incorrect questions
+          if (incorrectQuestions.length > 0) {
+            setIsReviewPhase(true);
+            setCurrentQuestionIndex(incorrectQuestions[0]);
+          } else {
+            // All questions correct, show results
+            setShowResults(true);
+          }
+        }
       }
+      setSelectedOption(null);
     });
-  }, [currentQuestionIndex, quiz, answers]);
+  }, [currentQuestionIndex, quiz, incorrectQuestions, isReviewPhase, modalOpacity]);
 
   const fetchQuiz = async () => {
     setLoading(true);
@@ -168,9 +192,15 @@ const QuizScreen = ({ route, navigation }) => {
 
     if (isCorrect) {
       setScore(score + 1);
+      // Remove from incorrect questions if it was there
+      if (incorrectQuestions.includes(currentQuestionIndex)) {
+        setIncorrectQuestions(incorrectQuestions.filter(q => q !== currentQuestionIndex));
+      }
     } else {
-      // Add to incorrect questions for potential retry
-      setIncorrectQuestions([...incorrectQuestions, currentQuestionIndex]);
+      // Add to incorrect questions if not already in the list
+      if (!incorrectQuestions.includes(currentQuestionIndex)) {
+        setIncorrectQuestions([...incorrectQuestions, currentQuestionIndex]);
+      }
     }
 
     // Reset modal opacity for fresh animation
@@ -275,12 +305,13 @@ const QuizScreen = ({ route, navigation }) => {
   });
 
   const ResultsScreen = () => {
-    // Get timer context with pause functionality
-    const { timeSpent, pauseTimer, resumeTimer, formatTimeSpent } =
-      useQuizTimer();
+    const { timeSpent, pauseTimer, resumeTimer, formatTimeSpent } = useQuizTimer();
+    const accuracy = Math.round((score / quiz.questions.length) * 100);
+    const xpEarned = incorrectQuestions.length === 0 ? 30 : 0;
 
-    const finalScore = Math.round((score / quiz.questions.length) * 100);
-    const isPassing = finalScore >= 70;
+    useEffect(() => {
+      pauseTimer();
+    }, []);
 
     const saveQuizResults = async (finalAnswers) => {
       try {
@@ -303,7 +334,7 @@ const QuizScreen = ({ route, navigation }) => {
             attempts: (currentQuizData.attempts || 0) + 1,
             bestScore: bestScore,
             lastCompletedAt: serverTimestamp(),
-            timeSpent: timeSpent, // Save the time spent on the quiz
+            timeSpent: timeSpent,
             answers: finalAnswers,
           },
         });
@@ -312,7 +343,7 @@ const QuizScreen = ({ route, navigation }) => {
         await updateDoc(userRef, {
           "statistics.quizzesCompleted": increment(1),
           "statistics.lastActiveAt": serverTimestamp(),
-          "statistics.totalQuizTime": increment(timeSpent), // Track total time spent on quizzes
+          "statistics.totalQuizTime": increment(timeSpent),
         });
 
         // Only update XP if this is the first completion
@@ -423,8 +454,8 @@ const QuizScreen = ({ route, navigation }) => {
         const user = auth.currentUser;
         if (user) {
           const today = new Date();
-          const currentMonth = today.toISOString().slice(0, 7); // Gets YYYY-MM format
-          const currentDay = today.toISOString().slice(0, 10); // Gets YYYY-MM-DD format
+          const currentMonth = today.toISOString().slice(0, 7);
+          const currentDay = today.toISOString().slice(0, 10);
           const userDocRef = doc(db, "users", user.uid);
           const userDoc = await getDoc(userDocRef);
 
@@ -482,83 +513,70 @@ const QuizScreen = ({ route, navigation }) => {
       }
     };
 
-    // Ensure timer is paused when this component is rendered
-    useEffect(() => {
-      pauseTimer();
-    }, []);
-
     return (
       <SafeAreaView style={tw`flex-1 bg-white`}>
         <StatusBar style="dark" />
 
         <View style={tw`px-6 py-8 flex-1 justify-center items-center`}>
           <Text style={tw`text-2xl font-bold text-center mb-2`}>
-            {isPassing ? "Selamat!" : "Hampir nih!"}
+            {incorrectQuestions.length === 0 ? "Selamat!" : "Hampir nih!"}
           </Text>
 
           <Text style={tw`text-lg text-gray-600 text-center mb-6`}>
-            {isPassing
-              ? "Kamu telah menyelesaikan quiz hari ini!"
-              : "Kamu bisa mencoba lagi untuk mendapatkan skor lebih tinggi."}
+            {incorrectQuestions.length === 0
+              ? "Kamu telah menyelesaikan quiz dengan sempurna!"
+              : "Kamu perlu menjawab semua pertanyaan dengan benar untuk menyelesaikan quiz."}
           </Text>
 
           <View style={tw`bg-gray-100 rounded-lg p-6 w-full items-center mb-8`}>
-            <Text style={tw`text-lg text-gray-700 mb-2`}>Skor Kamu</Text>
-            <Text
-              style={tw`text-4xl font-bold mb-2 ${
-                finalScore >= 70
-                  ? "text-green-600"
-                  : finalScore >= 50
-                  ? "text-yellow-600"
-                  : "text-red-600"
-              }`}
-            >
-              {finalScore}%
-            </Text>
+            <Text style={tw`text-lg text-gray-700 mb-2`}>Hasil Quiz</Text>
+            
+            <View style={tw`flex-row justify-between w-full mb-4`}>
+              <View style={tw`items-center`}>
+                <Text style={tw`text-sm text-gray-600`}>Akurasi</Text>
+                <Text style={tw`text-2xl font-bold text-[#BB1624]`}>{accuracy}%</Text>
+              </View>
+              
+              <View style={tw`items-center`}>
+                <Text style={tw`text-sm text-gray-600`}>XP</Text>
+                <Text style={tw`text-2xl font-bold text-[#BB1624]`}>{xpEarned}</Text>
+              </View>
+              
+              <View style={tw`items-center`}>
+                <Text style={tw`text-sm text-gray-600`}>Waktu</Text>
+                <Text style={tw`text-2xl font-bold text-[#BB1624]`}>{formatTimeSpent(timeSpent)}</Text>
+              </View>
+            </View>
 
-            <Text style={tw`text-base text-gray-600 text-center mb-3`}>
-              Kamu menjawab {score} dari {quiz.questions.length} pertanyaan
-              benar
-            </Text>
-
-            <Text style={tw`text-sm text-gray-500`}>
-              Waktu: {formatTimeSpent(timeSpent)}
+            <Text style={tw`text-base text-gray-600 text-center`}>
+              Kamu menjawab {score} dari {quiz.questions.length} pertanyaan benar
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={tw`bg-[#BB1624] py-3 px-6 rounded-full w-full items-center mb-4`}
-            onPress={async () => {
-              await saveQuizResults(answers);
-
-              navigation.navigate("MainApp", {
-                screen: "roadmap",
-                params: { refresh: true },
-              });
-            }}
-          >
-            <Text style={tw`text-white text-base font-medium`}>
-              Kembali ke Roadmap
-            </Text>
-          </TouchableOpacity>
-
-          {!isPassing && (
+          {incorrectQuestions.length > 0 ? (
             <TouchableOpacity
-              style={tw`border border-[#BB1624] py-3 px-6 rounded-full w-full items-center`}
+              style={tw`bg-[#BB1624] px-6 py-3 rounded-lg`}
               onPress={() => {
+                setIsReviewPhase(true);
+                setCurrentQuestionIndex(incorrectQuestions[0]);
                 setShowResults(false);
-                setCurrentQuestionIndex(0);
-                setSelectedOption(null);
-                setAnswers({});
-                setScore(0);
-                setIncorrectQuestions([]);
                 resumeTimer();
-                // We don't reset the timer - it keeps counting
               }}
             >
-              <Text style={tw`text-[#BB1624] text-base font-medium`}>
-                Ulangi Quiz
-              </Text>
+              <Text style={tw`text-white font-bold`}>Ulangi Pertanyaan Salah</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={tw`bg-[#BB1624] px-6 py-3 rounded-lg`}
+              onPress={async () => {
+                await saveQuizResults(answers);
+                navigation.navigate("MainApp", {
+                  screen: "roadmap",
+                  params: { refresh: true },
+                });
+              }}
+            >
+              <Text style={tw`text-white font-bold`}>Selesaikan Quiz</Text>
             </TouchableOpacity>
           )}
         </View>

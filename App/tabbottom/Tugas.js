@@ -40,22 +40,26 @@ export default function Tugas({ navigation }) {
 
   const fetchLeaderboard = () => {
     const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-      const usersList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        totalScore:
-          doc.data().monthlyQuiz &&
-          doc.data().monthlyQuiz.month === new Date().toISOString().slice(0, 7)
-            ? doc.data().monthlyQuiz.xp
-            : 0,
-      }));
+      const usersList = snapshot.docs.map((doc) => {
+        const userData = doc.data();
+        return {
+          id: doc.id,
+          ...userData,
+          totalScore: userData.xp || 0
+        };
+      });
 
       const sortedUsers = usersList
         .sort((a, b) => b.totalScore - a.totalScore)
         .slice(0, 10);
+      
       setLeaderboard(sortedUsers);
 
       const currentUser = auth.currentUser;
+      if (currentUser) {
+        const currentUserData = usersList.find(user => user.id === currentUser.uid);
+      }
+
       const position = sortedUsers.findIndex(
         (user) => user.id === currentUser?.uid
       );
@@ -109,42 +113,49 @@ export default function Tugas({ navigation }) {
     const startTimer = async () => {
       const today = new Date().toISOString().split("T")[0];
       try {
-        // Fetch current study time or initialize if not set
+        // Fetch current study time
         const userDoc = await getDoc(userDocRef);
         let currentMinutes = 0;
 
         if (userDoc.exists()) {
           const studyTime = userDoc.data().studyTime;
+          // Cek apakah data study time untuk hari ini
           if (studyTime?.date === today) {
             currentMinutes = studyTime.minutes;
+          } else {
+            // Reset untuk hari baru
+            currentMinutes = 0;
+            await updateDoc(userDocRef, {
+              studyTime: {
+                date: today,
+                minutes: 0
+              }
+            });
           }
         }
 
         // Start tracking study time
         const interval = setInterval(async () => {
           try {
-            currentMinutes += 1; // Increment study time by 1 minute
+            currentMinutes += 1;
             await updateDoc(userDocRef, {
               studyTime: {
                 date: today,
-                minutes: currentMinutes,
-              },
+                minutes: currentMinutes
+              }
             });
-
-            // Update state locally for immediate UI feedback
             setStudyTime(currentMinutes);
           } catch (error) {
             console.error("Error updating study time:", error);
           }
-        }, 60000); // Increment every 1 minute
+        }, 60000);
 
-        return interval; // Return interval reference for cleanup
+        return interval;
       } catch (error) {
         console.error("Error starting study time timer:", error);
       }
     };
 
-    // Call startTimer and ensure cleanup on unmount
     const interval = startTimer();
     return () => clearInterval(interval);
   };
@@ -162,11 +173,17 @@ export default function Tugas({ navigation }) {
       return;
     }
 
-    if (xp >= 30 && quizAnswersCorrect >= 10 && studyTime >= 5 && isTopThree) {
+    // Check if all daily challenges are completed
+    const isDailyChallengesCompleted = 
+      xp >= 30 && // Dapatkan 30 XP
+      quizAnswersCorrect >= 10 && // Selesaikan 10 pertanyaan kuis
+      studyTime >= 5; // Belajar selama 5 menit
+
+    if (isDailyChallengesCompleted) {
       try {
         const user = auth.currentUser;
         if (user) {
-          const today = new Date(); // Current date in string format
+          const today = new Date();
           const todayString = new Date().toDateString();
           const currentDay = today.toISOString().slice(0, 10);
 
@@ -180,24 +197,30 @@ export default function Tugas({ navigation }) {
             xp: 0,
           };
 
+          // Calculate bonus XP based on streak
+          const streak = userData.streak || 0;
+          const streakBonus = Math.min(streak, 7) * 5; // Max 35 XP bonus for 7-day streak
+          
           const newDailyXp =
             currentDailyQuiz.date === currentDay
-              ? currentDailyQuiz.xp + 100
-              : 100;
+              ? currentDailyQuiz.xp + 100 + streakBonus
+              : 100 + streakBonus;
 
           await updateDoc(userDocRef, {
-            xp: xp + 100,
+            xp: xp + 100 + streakBonus,
             coins: coins + 100,
             dailyChallengeClaimedDate: todayString,
             dailyQuiz: {
               ...currentDailyQuiz,
               xp: newDailyXp,
             },
+            streak: streak + 1, // Increment streak
+            lastClaimed: todayString, // Update last claimed date
           });
 
           Alert.alert(
             "Selamat!",
-            "Anda telah mengklaim hadiah 100 XP dan 100 coins!"
+            `Anda telah mengklaim hadiah ${100 + streakBonus} XP dan 100 coins!${streakBonus > 0 ? `\nBonus streak: ${streakBonus} XP` : ''}`
           );
           fetchUserData();
         }
@@ -207,7 +230,7 @@ export default function Tugas({ navigation }) {
     } else {
       Alert.alert(
         "Belum Bisa Klaim",
-        "Pastikan semua tantangan selesai dan Anda berada di 3 besar leaderboard."
+        "Pastikan semua tantangan selesai."
       );
     }
   };
@@ -357,13 +380,20 @@ export default function Tugas({ navigation }) {
                 Ikut kuis, dapatkan tambahan XP
               </Text>
               <TouchableOpacity
-                style={tw`bg-[#FBBC05] rounded-xl px-4 py-2 flex-row gap-2 items-center self-start`}
+                style={tw`bg-gray-300 rounded-xl px-4 py-2 flex-row gap-2 items-center self-start`}
+                disabled={true}
+                onPress={() => {
+                  Alert.alert(
+                    "Kuis Mingguan",
+                    "Kuis mingguan sedang dalam pengembangan. Silakan coba lagi nanti."
+                  );
+                }}
               >
                 <Image
                   source={require("./../assets/homePage/coins.png")}
-                  style={tw`w-6 h-6`}
+                  style={tw`w-6 h-6 opacity-50`}
                 />
-                <Text style={tw`text-sm`}>10</Text>
+                <Text style={tw`text-sm text-gray-500`}>10</Text>
               </TouchableOpacity>
             </View>
           </View>
