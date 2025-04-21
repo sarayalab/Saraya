@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import tw from "twrnc";
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp, increment } from "firebase/firestore";
 import { Ionicons } from "@expo/vector-icons";
 import Markdown, { MarkdownIt } from "react-native-markdown-display";
 import { auth, db } from "../../../../firebase";
@@ -129,7 +129,13 @@ const LessonScreen = ({ navigation, route }) => {
           completedAt: serverTimestamp(),
           lastPosition: currentContentIndex,
         },
-      });
+        xp: increment(10),
+      }
+    )
+    console.log("lesson exp earned");
+    ;
+      
+      
 
       // Check if all lessons in this level are complete, then update level progress
       if (levelId) {
