@@ -135,8 +135,9 @@ const LessonScreen = ({ navigation, route }) => {
             startedAt: userProgress?.startedAt || serverTimestamp(),
             completedAt: serverTimestamp(),
             lastPosition: currentContentIndex,
-            xp: increment(10),
+            xp: increment(10), /// this change erase and move it to 
           },
+          //here to rever tback
           });
           console.log("lesson exp earned");
       } else {

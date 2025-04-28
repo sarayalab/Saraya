@@ -316,10 +316,12 @@ const QuizScreen = ({ route, navigation }) => {
           "statistics.totalQuizTime": increment(timeSpent), // Track total time spent on quizzes
         });
 
-        // Only update XP if this is the first completion
-        if (!currentQuizData.status || currentQuizData.status !== "completed") {
-          await updateUserXP();
-        }
+        // // Only update XP if this is the first completion
+        // if (!currentQuizData.status || currentQuizData.status !== "completed") {
+        //   await updateUserXP();
+        // }
+
+        //uncomment ^ to revert back xp without finishing all corectly
 
         // Check if this completes the level
         if (levelId) {
@@ -357,6 +359,10 @@ const QuizScreen = ({ route, navigation }) => {
                 },
               });
 
+              await updateDoc(userRef, {
+                xp: increment(30),
+              });
+              
               // Update statistics
               await updateDoc(userRef, {
                 "statistics.levelsCompleted": increment(1),
