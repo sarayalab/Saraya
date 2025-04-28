@@ -305,6 +305,7 @@ const QuizScreen = ({ route, navigation }) => {
             lastCompletedAt: serverTimestamp(),
             timeSpent: timeSpent, // Save the time spent on the quiz
             answers: finalAnswers,
+            passed: isPassing,
           },
         });
 

@@ -11,7 +11,17 @@ If things are checked, `npx expo run:android` should work.
 This guide is written for every new version of Saraya App, especially after every `npx expo prebuild` that probably resets `/android` folder. May be changed as newer info added.
 
 1. Generate keystore for both release (.aab, .apk) and debug (AVD or other simulating-testing process)
+    Generate keystore by enter this command on root (./)
+    ``
 2. Move keystore to `android/app`   
 3. Add keystore credentials to `android/gradle.properties`
+
+
+
 4. Add credentials from `gradle.properties` to `android/app/build.gradle`
 5. Add SHA1 from each keystore to Firebase or Google Cloud
+
+To see keystore:
+keytool -list -v -keystore <keystore_name> 
+
+Pada 21 April 2025, nama keystore release adalah "saraya-release-key.keystore" dengan alias "saraya_releasekey" dan nama keystore debug adalah "saraya-debug-key.keystore" dengan alias "saraya_debugkey".

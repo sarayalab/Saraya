@@ -120,23 +120,33 @@ const LessonScreen = ({ navigation, route }) => {
 
     try {
       const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
 
-      // Update lesson completion status
-      await updateDoc(userRef, {
-        [`progress.lessons.${lessonId}`]: {
-          status: "completed",
-          startedAt: userProgress?.startedAt || serverTimestamp(),
-          completedAt: serverTimestamp(),
-          lastPosition: currentContentIndex,
-        },
-        xp: increment(10),
+      const lessonProgress = userData.progress?.lessons?.[lessonId];
+
+      const alreadyCompleted = lessonProgress?.status === "completed";
+
+      if(!alreadyCompleted){
+        // Update lesson completion status
+        await updateDoc(userRef, {
+          [`progress.lessons.${lessonId}`]: {
+            status: "completed",
+            startedAt: userProgress?.startedAt || serverTimestamp(),
+            completedAt: serverTimestamp(),
+            lastPosition: currentContentIndex,
+            xp: increment(10),
+          },
+          });
+          console.log("lesson exp earned");
+      } else {
+        await updateDoc(userRef, {
+          [`progress.lessons.${lessonId}.lastPosition`]:currentContentIndex,
+        });
+
+        console.log("lesson already completed, xp not granted");
       }
-    )
-    console.log("lesson exp earned");
-    ;
       
-      
-
       // Check if all lessons in this level are complete, then update level progress
       if (levelId) {
         const roadmapRef = doc(db, "roadmap", levelId);

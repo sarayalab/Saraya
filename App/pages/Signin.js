@@ -50,28 +50,28 @@ export default function Signin() {
   const [termsCheck, setTermsCheck] = useState(false);
   
 
-  // Google Auth Provider
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: '826074449604-8uch1c7pi1kik3vptf5kq1nqnupimea5.apps.googleusercontent.com',
-    // iosClientId: '826300876657-lk3bji4sc7sj7i7iptdcs5eqehnmkbg7.apps.googleusercontent.com', // Jika Anda menggunakan iOS
-    expoClientId: '826300876657-lk3bji4sc7sj7i7iptdcs5eqehnmkbg7.apps.googleusercontent.com', // Jika menggunakan Expo Go
-  });
+  // // Google Auth Provider
+  // const [request, response, promptAsync] = Google.useAuthRequest({
+  //   androidClientId: '826074449604-8uch1c7pi1kik3vptf5kq1nqnupimea5.apps.googleusercontent.com',
+  //   // iosClientId: '826300876657-lk3bji4sc7sj7i7iptdcs5eqehnmkbg7.apps.googleusercontent.com', // Jika Anda menggunakan iOS
+  //   expoClientId: '826300876657-lk3bji4sc7sj7i7iptdcs5eqehnmkbg7.apps.googleusercontent.com', // Jika menggunakan Expo Go
+      
+  // });
+  
   const togglePasswordVisibility = () => {
     setSecureTextEntry(!secureTextEntry);
   };
 
   useEffect(() => {
     GoogleSignin.configure({
-      iosClientId:
-      "826074449604-mhj0b3a9ioesmgq8rshf57a7li03hh0c.apps.googleusercontent.com",
-      webClientId:
-      "826074449604-li4cosq2noi1pa937keonond1f2ssapa.apps.googleusercontent.com",
+      webClientId: "826074449604-5u0qsd63hl716eds9q258h861rqiqg0u.apps.googleusercontent.com"
       // androidClientId: 
       // "826074449604-8uch1c7pi1kik3vptf5kq1nqnupimea5.apps.googleusercontent.com"
       //profileiImageSize:150 // change if needed,
     });
     setLoading(true);
 
+    
     const backAction = () => {
       BackHandler.exitApp();
       return true;
@@ -290,11 +290,11 @@ const handlegoogleSignIn = async () => {
           break;
         default:
           // Handle other errors
-          console.log("Something else happened during Goolge SIgn-In");
+          console.log("Something else happened during Google Sign-In");
           break;
       }
     } else {
-      console.log("Error not related to Google sign-in ooccured", error);
+      console.log("Error not related to Google sign-in occured", error);
     }
   };
 
