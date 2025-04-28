@@ -84,22 +84,10 @@ const News = ({ navigation }) => {
   const sortedUsers = users
     .map((user) => ({
       ...user,
-      monthlyXP:
-        user.monthlyQuiz &&
-        user.monthlyQuiz.month === new Date().toISOString().slice(0, 7)
-          ? user.monthlyQuiz.xp
-          : 0,
       totalXP: user.xp || 0,
     }))
-    // Primary sort by monthly XP
-    .sort((a, b) => b.monthlyXP - a.monthlyXP)
-    // Secondary sort by total XP if monthly XP is equal
-    .sort((a, b) => {
-      if (b.monthlyXP === a.monthlyXP) {
-        return b.totalXP - a.totalXP;
-      }
-      return 0;
-    })
+    // Sort by total XP
+    .sort((a, b) => b.totalXP - a.totalXP)
     .slice(0, 10);
 
   return (
@@ -228,7 +216,7 @@ const News = ({ navigation }) => {
               </Text>
 
               <Text style={tw`text-base text-gray-700`}>
-                {user.xp ? `${user.monthlyXP} XP` : "-"}
+                {user.xp ? `${user.totalXP} XP` : "-"}
                 {/* Menampilkan XP yang tersimpan */}
               </Text>
             </View>

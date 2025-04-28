@@ -133,7 +133,7 @@ const LessonScreen = ({ navigation, route }) => {
             completedAt: serverTimestamp(),
             lastPosition: currentContentIndex,
           },
-          xp: increment(10),
+          xp: increment(10)
         });
         console.log("Lesson XP earned for the first time");
       } else {
